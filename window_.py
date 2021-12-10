@@ -3,6 +3,35 @@ import PySimpleGUI as sg
 
 import pandas as pd
 
+
+def predict_patient(age: int, sex: int, cp: int, trestbps: int,
+                    chol: int, fbs: int, restecg: int, thalach: int,
+                    exang: int, oldpeak: float, slope: int, ca: int, thal: int):
+    a_patient = {
+        'age': age,
+        'sex': sex,
+        'cp': cp,
+        'trestbps': trestbps,
+        'chol': chol,
+        'fbs': fbs,
+        'restecg': restecg,
+        'thalach': thalach,
+        'exang': exang,
+        'oldpeak': oldpeak,
+        'slope': slope,
+        'ca': ca,
+        'thal': thal
+    }
+
+    a_patient = pd.DataFrame(a_patient, index=[0])
+
+    a_patient = loaded_ct.transform(a_patient)
+    a_patient = loaded_scaler.transform(a_patient)
+    prediction = loaded_model.predict(a_patient)
+
+    return prediction
+
+
 loaded_ct = joblib.load('./column_transformer.joblib')
 loaded_scaler = joblib.load('./scaler.joblib')
 loaded_model = joblib.load('./final_model.joblib')
@@ -86,92 +115,59 @@ while True:
         break
 
     if event == 'Do I Have Heart Disease?':
-        a_patient = {
-            'age': '',
-            'sex': '',
-            'cp': '',
-            'trestbps': '',
-            'chol': '',
-            'fbs': '',
-            'restecg': '',
-            'thalach': '',
-            'exang': '',
-            'oldpeak': '',
-            'slope': '',
-            'ca': '',
-            'thal': '',
+        genders_dict = {'Female': 0, 'Male': 1}
+
+        cp_types_dict = {
+            'typical angina': 0,
+            'atypical angina': 1,
+            'non-anginal pain': 2,
+            'asymptomatic': 3,
         }
 
-        a_patient['age'] = int(values['-AGE-'])
+        restecg_dict = {
+            'normal': 0,
+            'ST-T wave abnormality': 1,
+            'showing probable or definite left ventricular hypertrophy by Estes\' criteria': 2,
+        }
 
-        if values['-SEX-'] == 'Female':
-            a_patient['sex'] = 0
-        elif values['-SEX-'] == 'Male':
-            a_patient['sex'] = 1
+        slope_dict = {
+            'upsloping': 0,
+            'flat': 1,
+            'downsloping': 2,
+        }
 
-        if values['-CP-'] == 'typical angina':
-            a_patient['cp'] = 0
-        elif values['-CP-'] == 'atypical angina':
-            a_patient['cp'] = 1
-        elif values['-CP-'] == 'non-anginal pain':
-            a_patient['cp'] = 2
-        elif values['-CP-'] == 'asymptomatic':
-            a_patient['cp'] = 3
+        thal_dict = {
+            'normal': 0,
+            'fixed defect': 1,
+            'reversable defect': 2,
+        }
 
-        a_patient['trestbps'] = int(values['-TRESTBPS-'])
-        a_patient['chol'] = int(values['-CHOL-'])
+        age = int(values['-AGE-'])
+        sex = genders_dict[values['-SEX-']]
+        cp = cp_types_dict[values['-CP-']]
+        trestbps = int(values['-TRESTBPS-'])
+        chol = int(values['-CHOL-'])
+        fbs = int(values['-FBS-'])
+        restecg = restecg_dict[values['-RESTECG-']]
+        thalach = int(values['-THALACH-'])
+        exang = int(values['-EXANG-'])
+        oldpeak = float(values['-OLDPEAK-'])
+        slope = slope_dict[values['-SLOPE-']]
+        ca = values['-CA-']
+        thal = thal_dict[values['-THAL-']]
 
-        if values['-FBS-']:
-            a_patient['fbs'] = 1
-        elif values['-FBS-'] == False:
-            a_patient['fbs'] = 0
-
-        if values['-RESTECG-'] == 'normal':
-            a_patient['restecg'] = 0
-        elif values['-RESTECG-'] == 'ST-T wave abnormality':
-            a_patient['restecg'] = 1
-        elif values['-RESTECG-'] == 'showing probable or definite left ventricular hypertrophy by Estes\' criteria':
-            a_patient['restecg'] = 2
-
-        a_patient['thalach'] = int(values['-THALACH-'])
-
-        if values['-EXANG-']:
-            a_patient['exang'] = 1
-        elif values['-EXANG-'] == False:
-            a_patient['exang'] = 0
-
-        a_patient['oldpeak'] = float(values['-OLDPEAK-'])
-
-        if values['-SLOPE-'] == 'upsloping':
-            a_patient['slope'] = 0
-        elif values['-SLOPE-'] == 'flat':
-            a_patient['slope'] = 1
-        elif values['-SLOPE-'] == 'downsloping':
-            a_patient['slope'] = 2
-
-        a_patient['ca'] = values['-CA-']
-
-        if values['-THAL-'] == 'normal':
-            a_patient['thal'] = 0
-        elif values['-THAL-'] == 'fixed defect':
-            a_patient['thal'] = 1
-        elif values['-THAL-'] == 'reversable defect':
-            a_patient['thal'] = 2
-
-        # print(a_patient)
-
-        a_patient = pd.DataFrame(a_patient, index=[0])
-
-        a_patient = loaded_ct.transform(a_patient)
-        a_patient = loaded_scaler.transform(a_patient)
-        prediction = loaded_model.predict(a_patient)
+        prediction = predict_patient(age, sex, cp, trestbps,
+                                     chol, fbs, restecg, thalach,
+                                     exang, oldpeak, slope, ca, thal)
 
         print(prediction[0])
         print(type(prediction))
 
         if prediction[0] == 1:
-            sg.popup_ok('Congratulation! You Don\'t Have Heart Disease.', background_color='green')
+            sg.popup_ok(
+                'Congratulation! You Don\'t Have Heart Disease.', background_color='green')
         else:
-            sg.popup_ok('You Do Have Heart Disease! Go See A Doctor.', background_color='red')
+            sg.popup_ok('You Do Have Heart Disease! Go See A Doctor.',
+                        background_color='red')
 
 window.close()
